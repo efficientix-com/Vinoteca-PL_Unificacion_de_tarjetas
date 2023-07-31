@@ -12,12 +12,12 @@
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> PL - Unificacion de tarjetas <customscript_tkiio_pl_unificacion_tarjet>
  */
-define(['N/log', 'N/ui/serverWidget', 'N/search'],
+define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
     /**
  * @param{log} log
  * @param{serverWidget} serverWidget
  */
-    (log, serverWidget, search) => {
+    (log, serverWidget, search, url) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -42,12 +42,13 @@ define(['N/log', 'N/ui/serverWidget', 'N/search'],
                             id: 'custpage_pl_ut_errors'
                         });
                         errorField.defaultValue = searchResult.error;
-                        scriptContext.response.writePage({ pageObject: form });
+                    }else{
+                        setResults(form, searchResult.result);
                     }
                 }else{ // se muestra la interfaz en blanco
-                    log.debug({title:'Creando', details:'Crenado interfaz'});
-                    scriptContext.response.writePage({ pageObject: form });
+                    log.debug({title:'Creando', details:'Creando interfaz'});
                 }
+                scriptContext.response.writePage({ pageObject: form });
             } catch (error) {
                 log.error({title: 'error onRequest: ', details: error});
             }
@@ -144,7 +145,7 @@ define(['N/log', 'N/ui/serverWidget', 'N/search'],
                     label: 'Número Tarjeta'
                 });
 
-                var nameCard = sublist.addField({
+                var customer = sublist.addField({
                     id: "fieldid_pl_ut_client_name",
                     type: serverWidget.FieldType.TEXT,
                     label: 'Cliente'
@@ -204,6 +205,21 @@ define(['N/log', 'N/ui/serverWidget', 'N/search'],
                 if (duplicadosResult.count > 0) {
                     if (duplicadosResult.count > 1) {
                         log.debug({ title:'Duplicado encontrado', details:'Duplicado encontrado' });
+                        let dataFound = [];
+                        duplicadosResult.pageRanges.forEach(function(pageRange){
+                            var myPage = duplicadosResult.fetch({index: pageRange.index});
+                            myPage.data.forEach(function(result){
+                                let internalId = result.getValue({name: 'internalid'});
+                                let clienteId = result.getValue({name: 'custrecord_efx_lealtad_clienterelsocio'});
+                                let clienteText = result.getText({name: 'custrecord_efx_lealtad_clienterelsocio'});
+                                let tarjetaId = result.getValue({name: 'custrecord_efx_lealtad_numtarjetasocio'});
+                                let tarjetaText = result.getText({name: 'custrecord_efx_lealtad_numtarjetasocio'});
+                                let socioNumer = result.getValue({name: 'custrecord_efx_lealtad_socionumerodesoci'});
+                                dataFound.push({idSocio: internalId, clienteId: clienteId, clienteText: clienteText, tarjetaId: tarjetaId, tarjetaText: tarjetaText, socio: socioNumer});
+                            });
+                        });
+                        response.success = true;
+                        response.result = dataFound;
                     }else{
                         response.success = false;
                         response.error = 'No existen duplicados con los datos ingresados';
@@ -217,6 +233,33 @@ define(['N/log', 'N/ui/serverWidget', 'N/search'],
             } catch (error) {
                 log.error({title:'searchResults', details:error});
                 response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function setResults(form, datos) {
+            const response = {success: false, error: ''};
+            try {
+                log.debug({ title:'datos by form', details:datos });
+                var sublist = form.getSublist({ id: 'sublistid_pl_ut_results' });
+                for (let resultLine = 0; resultLine < datos.length; resultLine++) {
+                    if (datos[resultLine].tarjetaId) {
+                        var tarjetaLink = url.resolveRecord({ recordType: 'customrecord_efx_lealtad_tarjetalealtad', recordId: datos[resultLine].tarjetaId, isEditMode: false });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_card_num', line: resultLine, value: "<a href=" + tarjetaLink + ">" + datos[resultLine].tarjetaText + "</a>" });
+                    }
+                    if (datos[resultLine].clienteId) {
+                        var clienteLink = url.resolveRecord({ recordType: 'customer', recordId: datos[resultLine].clienteId, isEditMode: false });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_client_name', line: resultLine, value: "<a href=" + clienteLink + ">" + datos[resultLine].clienteText + "</a>" });
+                    }
+                    if (datos[resultLine].idSocio) {
+                        var socioLink = url.resolveRecord({ recordType: 'customrecord_efx_lealtad_socios', recordId: datos[resultLine].idSocio, isEditMode: false });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner', line: resultLine, value: "<a href=" + socioLink + ">" + datos[resultLine].socio + "</a>" });
+                    }
+                }
+            } catch (error) {
+                log.error({ title:'setResult', details:error });
+                response.success =  false;
                 response.error = error;
             }
             return response;
