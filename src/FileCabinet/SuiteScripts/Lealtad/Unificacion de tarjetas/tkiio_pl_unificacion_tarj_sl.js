@@ -144,17 +144,41 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
                     type: serverWidget.FieldType.TEXT,
                     label: 'Número Tarjeta'
                 });
+                var cardNumID = sublist.addField({
+                    id: "fieldid_pl_ut_card_num_id",
+                    type: serverWidget.FieldType.TEXT,
+                    label: 'ID Tarjeta'
+                });
+                cardNumID.updateDisplayType({
+                    displayType: serverWidget.FieldDisplayType.HIDDEN
+                });
 
                 var customer = sublist.addField({
                     id: "fieldid_pl_ut_client_name",
                     type: serverWidget.FieldType.TEXT,
                     label: 'Cliente'
                 });
+                var customerID = sublist.addField({
+                    id: "fieldid_pl_ut_client_name_id",
+                    type: serverWidget.FieldType.TEXT,
+                    label: 'ID Cliente'
+                });
+                customerID.updateDisplayType({
+                    displayType: serverWidget.FieldDisplayType.HIDDEN
+                });
 
                 var partner = sublist.addField({
                     id: "fieldid_pl_ut_partner",
                     type: serverWidget.FieldType.TEXT,
                     label: 'Socio'
+                });
+                var partnerID = sublist.addField({
+                    id: "fieldid_pl_ut_partner_id",
+                    type: serverWidget.FieldType.TEXT,
+                    label: 'ID Socio'
+                });
+                partnerID.updateDisplayType({
+                    displayType: serverWidget.FieldDisplayType.HIDDEN
                 });
 
                 return form;
@@ -247,14 +271,17 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
                     if (datos[resultLine].tarjetaId) {
                         var tarjetaLink = url.resolveRecord({ recordType: 'customrecord_efx_lealtad_tarjetalealtad', recordId: datos[resultLine].tarjetaId, isEditMode: false });
                         sublist.setSublistValue({ id: 'fieldid_pl_ut_card_num', line: resultLine, value: "<a href=" + tarjetaLink + ">" + datos[resultLine].tarjetaText + "</a>" });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_card_num_id', line: resultLine, value: datos[resultLine].tarjetaId });
                     }
                     if (datos[resultLine].clienteId) {
                         var clienteLink = url.resolveRecord({ recordType: 'customer', recordId: datos[resultLine].clienteId, isEditMode: false });
                         sublist.setSublistValue({ id: 'fieldid_pl_ut_client_name', line: resultLine, value: "<a href=" + clienteLink + ">" + datos[resultLine].clienteText + "</a>" });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_client_name_id', line: resultLine, value: datos[resultLine].clienteId });
                     }
                     if (datos[resultLine].idSocio) {
                         var socioLink = url.resolveRecord({ recordType: 'customrecord_efx_lealtad_socios', recordId: datos[resultLine].idSocio, isEditMode: false });
                         sublist.setSublistValue({ id: 'fieldid_pl_ut_partner', line: resultLine, value: "<a href=" + socioLink + ">" + datos[resultLine].socio + "</a>" });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner_id', line: resultLine, value: datos[resultLine].idSocio });
                     }
                 }
             } catch (error) {

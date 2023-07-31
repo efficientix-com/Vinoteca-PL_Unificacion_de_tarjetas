@@ -54,7 +54,12 @@ function(search, currentRecord, format, message, url) {
      * @since 2015.2
      */
     function fieldChanged(scriptContext) {
-
+        try {
+            console.log('sublist: ' + scriptContext.sublistId);
+            console.log('field: ' + scriptContext.fieldId);
+        } catch (error) {
+            console.error('fieldChanged', error);
+        }
     }
 
     /**
@@ -81,7 +86,11 @@ function(search, currentRecord, format, message, url) {
      * @since 2015.2
      */
     function sublistChanged(scriptContext) {
-
+        try {
+            console.log('sublista', scriptContext.sublistId);
+        } catch (error) {
+            console.error('SublistChanged', error);
+        }
     }
 
     /**
@@ -219,6 +228,83 @@ function(search, currentRecord, format, message, url) {
     function unifyData(params) {
         try {
             console.log('Inicio de la unificación de datos');
+            var objRecord = currentRecord.get();
+            var numLines = objRecord.getLineCount({sublistId: 'sublistid_pl_ut_results'});
+            let masterBandera = 0;
+            let selectBandera = 0;
+            let controlLine = false;
+            let dataSelected = [];
+            for (let resultLine = 0; resultLine < numLines; resultLine++) {
+                let lineValues = {master: '', select: '', tarjeta: '', cliente: '', socio: ''};
+                lineValues.master = objRecord.getSublistValue({
+                    sublistId: 'sublistid_pl_ut_results',
+                    fieldId: 'fieldid_pl_ut_check_select_mast',
+                    line: resultLine
+                });
+                if (lineValues.master == true) {
+                    masterBandera++;
+                }
+                lineValues.select = objRecord.getSublistValue({
+                    sublistId: 'sublistid_pl_ut_results',
+                    fieldId: 'fieldid_pl_ut_check_select',
+                    line: resultLine
+                });
+                if (lineValues.select == true) {
+                    selectBandera++;
+                }
+                if (lineValues.master == true && lineValues.select == true) {
+                    controlLine = true;
+                    break;
+                }
+                lineValues.tarjeta = objRecord.getSublistValue({
+                    sublistId: 'sublistid_pl_ut_results',
+                    fieldId: 'fieldid_pl_ut_card_num_id',
+                    line: resultLine
+                });
+                lineValues.cliente = objRecord.getSublistValue({
+                    sublistId: 'sublistid_pl_ut_results',
+                    fieldId: 'fieldid_pl_ut_client_name_id',
+                    line: resultLine
+                });
+                lineValues.socio = objRecord.getSublistValue({
+                    sublistId: 'sublistid_pl_ut_results',
+                    fieldId: 'fieldid_pl_ut_partner_id',
+                    line: resultLine
+                });
+                console.log('Values line ' + resultLine +': ', lineValues);
+                dataSelected.push(lineValues);
+            }
+            if (controlLine == true) {
+                var alertMessage = message.create({
+                    type: message.Type.WARNING,
+                    title: 'Precaución',
+                    message: 'No puede seleccionar su registro Maestro como registro de unificación',
+                    duration: 5000
+                });
+                alertMessage.show();
+                return;
+            }
+            if (masterBandera != 1) {
+                var alertMessage = message.create({
+                    type: message.Type.WARNING,
+                    title: 'Precaución',
+                    message: 'Seleccione un registro como maestro',
+                    duration: 5000
+                });
+                alertMessage.show();
+                return;
+            }
+            if (selectBandera < 1) {
+                var alertMessage = message.create({
+                    type: message.Type.WARNING,
+                    title: 'Precaución',
+                    message: 'Seleccione al menos un registro a unificar',
+                    duration: 5000
+                });
+                alertMessage.show();
+                return;
+            }
+            console.log('finalData', dataSelected);
         } catch (error) {
             console.error('Error unifyData', error);
         }
@@ -230,7 +316,7 @@ function(search, currentRecord, format, message, url) {
         unifyData: unifyData
         // fieldChanged: fieldChanged,
         // postSourcing: postSourcing,
-        // sublistChanged: sublistChanged,
+        // sublistChanged: sublistChanged
         // lineInit: lineInit,
         // validateField: validateField,
         // validateLine: validateLine,
