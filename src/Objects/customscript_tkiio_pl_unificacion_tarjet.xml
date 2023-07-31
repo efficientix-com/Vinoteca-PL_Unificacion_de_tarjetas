@@ -9,16 +9,16 @@
   <scriptfile>[/SuiteScripts/Lealtad/Unificacion de tarjetas/tkiio_pl_unificacion_tarj_sl.js]</scriptfile>
   <scriptdeployments>
     <scriptdeployment scriptid="customdeploy_tkiio_pl_unificacion_tarjet">
-      <allemployees>F</allemployees>
+      <allemployees>T</allemployees>
       <allpartners>F</allpartners>
-      <allroles>F</allroles>
+      <allroles>T</allroles>
       <audslctrole></audslctrole>
       <eventtype></eventtype>
       <isdeployed>T</isdeployed>
       <isonline>F</isonline>
       <loglevel>DEBUG</loglevel>
       <runasrole>ADMINISTRATOR</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
       <title>PL - Unificacion de tarjetas</title>
     </scriptdeployment>
   </scriptdeployments>
