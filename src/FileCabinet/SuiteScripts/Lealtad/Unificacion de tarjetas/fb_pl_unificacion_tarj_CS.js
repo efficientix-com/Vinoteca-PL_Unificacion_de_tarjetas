@@ -1,7 +1,6 @@
 /**
  * @NApiVersion 2.1
  * @NScriptType ClientScript
- * @NModuleScope SameAccount
  * @name fb_pl_unificacion_tarj_CS
  * @version 1.0
  * @author Dylan Mendoza <dylan.mendoza@freebug.mx>
@@ -9,13 +8,13 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Vinoteca
- * Last modification   -> 20/07/2023
+ * Last modification   -> 01/08/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> N/A <N/A>
  */
-define(['N/search','N/currentRecord','N/format','N/ui/message','N/url'],
+define(['N/search','N/currentRecord','N/format','N/ui/message','N/url', 'N/https'],
 
-function(search, currentRecord, format, message, url) {
+function(search, currentRecord, format, message, url, https) {
     
     /**
      * Function to be executed after page is initialized.
@@ -304,7 +303,25 @@ function(search, currentRecord, format, message, url) {
                 alertMessage.show();
                 return;
             }
-            console.log('finalData', dataSelected);
+            // console.log('finalData', dataSelected);
+            var resolveUrl = url.resolveScript({
+                scriptId: 'customscript_tkiio_pl_unificacion_tarjet',
+                deploymentId: 'customdeploy_tkiio_pl_unificacion_tarjet',
+                returnExternalUrl: false,
+                params: {'unify': true}
+            });
+            var headerObj = {
+                name: 'Accept-Language',
+                value: 'en-us'
+            };
+            dataSelected = JSON.stringify({data:dataSelected});
+            console.log('dataselect:',dataSelected);
+            var response = https.post({
+                url: resolveUrl,
+                body: {data: dataSelected},
+                headers: headerObj
+            });
+            console.log('response: ', response);
         } catch (error) {
             console.error('Error unifyData', error);
         }

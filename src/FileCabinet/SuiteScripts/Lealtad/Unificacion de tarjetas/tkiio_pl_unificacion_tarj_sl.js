@@ -8,16 +8,16 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Vinoteca
- * Last modification   -> 31/07/2023
+ * Last modification   -> 01/08/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> PL - Unificacion de tarjetas <customscript_tkiio_pl_unificacion_tarjet>
  */
-define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
+define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
     /**
  * @param{log} log
  * @param{serverWidget} serverWidget
  */
-    (log, serverWidget, search, url) => {
+    (log, serverWidget, search, url, record) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -30,25 +30,32 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
                 var request = scriptContext.request;
                 var params = request.parameters;
                 log.debug({title:'Start', details:params});
-                if (!params.unify) { // Se crea la interfaz
-                    var form = createInterface(params);
-                }
-                if (params.filtering) { // se agregan resultados filtrados a la interfaz
-                    log.debug({title:'Datos', details:'filtrando'});
-                    var searchResult = searchResults(params);
-                    log.debug({title:'searchResult', details:searchResult});
-                    if (searchResult.success == false) {
-                        var errorField = form.getField({
-                            id: 'custpage_pl_ut_errors'
-                        });
-                        errorField.defaultValue = searchResult.error;
-                    }else{
-                        setResults(form, searchResult.result);
+                if (request.method == 'POST') { // Si es petición POST se crea registro de unificacion
+                    var data = JSON.parse(params.data);
+                    log.debug({title:'Data post', details:data});
+                    if (data.data.length) {
+                        let resultRecord = createUnifyRecord(data.data)
+                        log.debug({ title:'resultRecord', details:resultRecord });
                     }
-                }else{ // se muestra la interfaz en blanco
-                    log.debug({title:'Creando', details:'Creando interfaz'});
+                }else{ // Si es GET se crea la interfaz para buscar información.
+                    var form = createInterface(params);
+                    if (params.filtering) { // se agregan resultados filtrados a la interfaz
+                        log.debug({title:'Datos', details:'filtrando'});
+                        var searchResult = searchResults(params);
+                        log.debug({title:'searchResult', details:searchResult});
+                        if (searchResult.success == false) {
+                            var errorField = form.getField({
+                                id: 'custpage_pl_ut_errors'
+                            });
+                            errorField.defaultValue = searchResult.error;
+                        }else{
+                            setResults(form, searchResult.result);
+                        }
+                    }else{ // se muestra la interfaz en blanco
+                        log.debug({title:'Creando', details:'Creando interfaz'});
+                    }
+                    scriptContext.response.writePage({ pageObject: form });
                 }
-                scriptContext.response.writePage({ pageObject: form });
             } catch (error) {
                 log.error({title: 'error onRequest: ', details: error});
             }
@@ -287,6 +294,61 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url'],
             } catch (error) {
                 log.error({ title:'setResult', details:error });
                 response.success =  false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function createUnifyRecord(datos) {
+            const response = {success: false, error: '', recordId: ''};
+            try {
+                log.debug({ title:'Datos recibidos', details:datos });
+                let unifyRecord = record.create({
+                    type: 'customrecord_fb_pl_unify_record',
+                    isDynamic: true
+                });
+                for (let line = 0; line < datos.length; line++) {
+                    let lineDat = datos[line];
+                    log.debug({ title:'lineDat', details:lineDat });
+                    if (lineDat.master == true) { // información de registro maestro
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_master_rec',
+                            value: lineDat.socio
+                        });
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_master_tarj',
+                            value: lineDat.tarjeta
+                        });
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_master_customer',
+                            value: lineDat.cliente
+                        });
+                    }else if(lineDat.select == true){ // información de registros a unificar
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_unify_rec',
+                            value: lineDat.socio
+                        });
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_unify_tarj',
+                            value: lineDat.tarjeta
+                        });
+                        unifyRecord.setValue({
+                            fieldId: 'custrecord_fb_pl_uni_rec_unify_cust',
+                            value: lineDat.cliente
+                        });
+                    }
+                }
+                var regCreate = unifyRecord.save({
+                    enableSourcing: true,
+                    ignoreMandatoryFields: true
+                });
+                if (regCreate) {
+                    response.success = true;
+                    response.recordId = regCreate;
+                }
+            } catch (error) {
+                log.error({ title:'createUnifyRecord', details:error });
+                response.success = false;
                 response.error = error;
             }
             return response;
