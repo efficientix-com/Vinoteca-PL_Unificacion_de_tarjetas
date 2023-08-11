@@ -81,6 +81,26 @@
           <sameRowAsPrevious>F</sameRowAsPrevious>
           <quickAdd>F</quickAdd>
         </field>
+        <field>
+          <id>[scriptid=customrecord_fb_pl_unify_record.custrecord_fb_pl_uni_rec_prin_state]</id>
+          <label>Estado</label>
+          <visible>T</visible>
+          <mandatory>T</mandatory>
+          <displayType>DISABLED</displayType>
+          <columnBreak>F</columnBreak>
+          <sameRowAsPrevious>F</sameRowAsPrevious>
+          <quickAdd>F</quickAdd>
+        </field>
+        <field>
+          <id>[scriptid=customrecord_fb_pl_unify_record.custrecord_fb_pl_uni_rec_prin_details]</id>
+          <label>Detalles</label>
+          <visible>T</visible>
+          <mandatory>F</mandatory>
+          <displayType>DISABLED</displayType>
+          <columnBreak>F</columnBreak>
+          <sameRowAsPrevious>F</sameRowAsPrevious>
+          <quickAdd>F</quickAdd>
+        </field>
       </fields>
     </fieldGroup>
     <fieldGroup scriptid="fieldgroup_2_5907646_sb2_433">
