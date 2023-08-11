@@ -1,0 +1,29 @@
+<customlist scriptid="customlist_fb_pl_unify_state">
+  <description>Estados de procesamiento de los registros de unificación.</description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>PL - Estados de unificación</name>
+  <customvalues>
+    <customvalue scriptid="val_80930896_5907646_sb2_661">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Pendiente de procesar</value>
+    </customvalue>
+    <customvalue scriptid="val_80930897_5907646_sb2_105">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Procesando</value>
+    </customvalue>
+    <customvalue scriptid="val_80930898_5907646_sb2_492">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Procesado</value>
+    </customvalue>
+    <customvalue scriptid="val_80930899_5907646_sb2_696">
+      <abbreviation>E</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Error al procesar</value>
+    </customvalue>
+  </customvalues>
+</customlist>
