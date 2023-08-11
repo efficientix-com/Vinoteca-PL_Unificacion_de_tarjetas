@@ -8,7 +8,7 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Vinoteca
- * Last modification   -> 01/08/2023
+ * Last modification   -> 11/08/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> PL - Unificacion de tarjetas <customscript_tkiio_pl_unificacion_tarjet>
  */
@@ -29,6 +29,7 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
             try {
                 var request = scriptContext.request;
                 var params = request.parameters;
+                var response = scriptContext.response;
                 log.debug({title:'Start', details:params});
                 if (request.method == 'POST') { // Si es petición POST se crea registro de unificacion
                     var data = JSON.parse(params.data);
@@ -36,6 +37,10 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                     if (data.data.length) {
                         let resultRecord = createUnifyRecord(data.data)
                         log.debug({ title:'resultRecord', details:resultRecord });
+                        if (resultRecord.success == true) {
+                            var result = {regCreated: resultRecord.recordId}
+                            response.writeLine({output: JSON.stringify(result)});
+                        }
                     }
                 }else{ // Si es GET se crea la interfaz para buscar información.
                     var form = createInterface(params);
@@ -188,6 +193,24 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                     displayType: serverWidget.FieldDisplayType.HIDDEN
                 });
 
+                var partnerBirthdat = sublist.addField({
+                    id: "fieldid_pl_ut_partner_birthday",
+                    type: serverWidget.FieldType.DATE,
+                    label: 'Fecha de nacimiento'
+                });
+
+                var customerRFC = sublist.addField({
+                    id: "fieldid_pl_ut_client_rfc",
+                    type: serverWidget.FieldType.TEXT,
+                    label: 'RFC'
+                });
+
+                var partnerDesde = sublist.addField({
+                    id: "fieldid_pl_ut_partner_desde",
+                    type: serverWidget.FieldType.DATE,
+                    label: 'Miembro desde'
+                });
+
                 return form;
             } catch (error) {
                 log.error({ title: 'Error on createInterface', details: error });
@@ -219,14 +242,22 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                     filters:searchFilters,
                     columns:
                     [
-                       search.createColumn({
-                          name: "internalid",
-                          sort: search.Sort.ASC,
-                          label: "ID interno"
-                       }),
-                       search.createColumn({name: "custrecord_efx_lealtad_clienterelsocio", label: "Cliente relacionado"}),
-                       search.createColumn({name: "custrecord_efx_lealtad_numtarjetasocio", label: "Número de tarjeta de socio"}),
-                       search.createColumn({name: "custrecord_efx_lealtad_socionumerodesoci", label: "Número de socio de programa de lealtad"})
+                        search.createColumn({
+                            name: "internalid",
+                            sort: search.Sort.ASC,
+                            label: "ID interno"
+                        }),
+                        search.createColumn({name: "custrecord_efx_lealtad_clienterelsocio", label: "Cliente relacionado"}),
+                        search.createColumn({name: "custrecord_efx_lealtad_numtarjetasocio", label: "Número de tarjeta de socio"}),
+                        search.createColumn({name: "custrecord_efx_lealtad_socionumerodesoci", label: "Número de socio de programa de lealtad"}),
+                        search.createColumn({name: "custrecord_efx_lealtad_sociofechanacimie", label: "Fecha de nacimiento del socio"}),
+                        search.createColumn({
+                            name: "custentity_mx_rfc",
+                            join: "CUSTRECORD_EFX_LEALTAD_CLIENTERELSOCIO",
+                            label: "RFC"
+                        }),
+                        search.createColumn({name: "custrecord_efx_lealtad_miembrodesde", label: "Miembro desde"}),
+                        search.createColumn({name: "name", label: "Nombre"})
                     ]
                 });
                 var duplicadosResult = sociosDuplicadosSearch.runPaged({
@@ -246,7 +277,15 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                                 let tarjetaId = result.getValue({name: 'custrecord_efx_lealtad_numtarjetasocio'});
                                 let tarjetaText = result.getText({name: 'custrecord_efx_lealtad_numtarjetasocio'});
                                 let socioNumer = result.getValue({name: 'custrecord_efx_lealtad_socionumerodesoci'});
-                                dataFound.push({idSocio: internalId, clienteId: clienteId, clienteText: clienteText, tarjetaId: tarjetaId, tarjetaText: tarjetaText, socio: socioNumer});
+                                let socioFechaNacimiento = result.getValue({name: 'custrecord_efx_lealtad_sociofechanacimie'});
+                                let clienteRfc = result.getValue({
+                                    name: "custentity_mx_rfc",
+                                    join: "CUSTRECORD_EFX_LEALTAD_CLIENTERELSOCIO",
+                                    label: "RFC"
+                                });
+                                let socioMiembroDesde = result.getValue({name: 'custrecord_efx_lealtad_miembrodesde'});
+                                let socioNombre = result.getValue({name: 'name'});
+                                dataFound.push({idSocio: internalId, clienteId: clienteId, clienteText: clienteText, clienteRfc: clienteRfc, tarjetaId: tarjetaId, tarjetaText: tarjetaText, socio: socioNumer, socioNacimiento: socioFechaNacimiento, socioNombre: socioNombre, socioDesde: socioMiembroDesde });
                             });
                         });
                         response.success = true;
@@ -287,8 +326,17 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                     }
                     if (datos[resultLine].idSocio) {
                         var socioLink = url.resolveRecord({ recordType: 'customrecord_efx_lealtad_socios', recordId: datos[resultLine].idSocio, isEditMode: false });
-                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner', line: resultLine, value: "<a href=" + socioLink + ">" + datos[resultLine].socio + "</a>" });
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner', line: resultLine, value: "<a href=" + socioLink + ">" + datos[resultLine].socioNombre + "</a>" });
                         sublist.setSublistValue({ id: 'fieldid_pl_ut_partner_id', line: resultLine, value: datos[resultLine].idSocio });
+                    }
+                    if (datos[resultLine].socioNacimiento) {
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner_birthday', line: resultLine, value: datos[resultLine].socioNacimiento});
+                    }
+                    if (datos[resultLine].clienteRfc) {
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_client_rfc', line: resultLine, value: datos[resultLine].clienteRfc});
+                    }
+                    if (datos[resultLine].socioDesde) {
+                        sublist.setSublistValue({ id: 'fieldid_pl_ut_partner_desde', line: resultLine, value: datos[resultLine].socioDesde});
                     }
                 }
             } catch (error) {
@@ -307,6 +355,9 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                     type: 'customrecord_fb_pl_unify_record',
                     isDynamic: true
                 });
+                let sociosAUnificar = [];
+                let tarjetasAUnificar = [];
+                let clientesAUnificar = [];
                 for (let line = 0; line < datos.length; line++) {
                     let lineDat = datos[line];
                     log.debug({ title:'lineDat', details:lineDat });
@@ -324,20 +375,24 @@ define(['N/log', 'N/ui/serverWidget', 'N/search', 'N/url', 'N/record'],
                             value: lineDat.cliente
                         });
                     }else if(lineDat.select == true){ // información de registros a unificar
-                        unifyRecord.setValue({
-                            fieldId: 'custrecord_fb_pl_uni_rec_unify_rec',
-                            value: lineDat.socio
-                        });
-                        unifyRecord.setValue({
-                            fieldId: 'custrecord_fb_pl_uni_rec_unify_tarj',
-                            value: lineDat.tarjeta
-                        });
-                        unifyRecord.setValue({
-                            fieldId: 'custrecord_fb_pl_uni_rec_unify_cust',
-                            value: lineDat.cliente
-                        });
+                        sociosAUnificar.push(lineDat.socio);
+                        tarjetasAUnificar.push(lineDat.tarjeta);
+                        clientesAUnificar.push(lineDat.cliente);
                     }
                 }
+                unifyRecord.setValue({
+                    fieldId: 'custrecord_fb_pl_uni_rec_unify_rec',
+                    value: sociosAUnificar
+                });
+                unifyRecord.setValue({
+                    fieldId: 'custrecord_fb_pl_uni_rec_unify_tarj',
+                    value: tarjetasAUnificar
+                });
+                unifyRecord.setValue({
+                    fieldId: 'custrecord_fb_pl_uni_rec_unify_cust',
+                    value: clientesAUnificar
+                });
+                // var regCreate = 2
                 var regCreate = unifyRecord.save({
                     enableSourcing: true,
                     ignoreMandatoryFields: true

@@ -8,7 +8,7 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Vinoteca
- * Last modification   -> 01/08/2023
+ * Last modification   -> 11/08/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> N/A <N/A>
  */
@@ -322,6 +322,14 @@ function(search, currentRecord, format, message, url, https) {
                 headers: headerObj
             });
             console.log('response: ', response);
+            if (response.body != '') {
+                let responseBody = JSON.parse(response.body)
+                console.log('body: ', responseBody);
+                if (responseBody.regCreated) {
+                    var unifyRecord = url.resolveRecord({ recordType: 'customrecord_fb_pl_unify_record', recordId: responseBody.regCreated, isEditMode: false });
+                    window.open(unifyRecord, '_self');
+                }
+            }
         } catch (error) {
             console.error('Error unifyData', error);
         }
